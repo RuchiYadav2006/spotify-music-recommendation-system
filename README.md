@@ -1,0 +1,1 @@
+A content-based recommendation system that suggests similar songs by comparing audio features (danceability, energy, tempo, acousticness, etc.) using cosine similarity. No collaborative filtering or user data required — recommendations are purely based on the musical characteristics of each track. Built with Python, pandas, and scikit-learn.
