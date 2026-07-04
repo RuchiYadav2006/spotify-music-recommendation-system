@@ -130,3 +130,35 @@ scores = cosine_similarity(song_vector, self.scaled_features)[0]
 For a production system with millions of songs you'd use approximate nearest
 neighbor search (Faiss, Annoy) instead — but on-demand cosine is perfectly
 fast for a 73k-song portfolio project.
+
+
+## Why add a same-genre filter on top of cosine similarity?
+
+Pure audio-feature similarity is language and culture blind. The model only
+sees 9 numbers per song — it has no concept of Hindi, Portuguese, or English.
+
+**The problem we hit:**
+Searching "Tu Hi Haqeeqat" (Bollywood ballad) returned Brazilian/Portuguese
+songs — not because the algorithm was wrong, but because those songs had
+nearly identical audio profiles (soft, acoustic, low energy, low tempo).
+
+**The fix:**
+Added an optional `same_genre` flag to `recommend()`:
+
+```python
+def recommend(self, song_name: str, n: int = 5, same_genre: bool = False)
+```
+
+When `same_genre=True`:
+- Find the input song's `track_genre` from the dataset
+- During result collection, skip any song whose genre doesn't match
+- Show which genre is being filtered in the UI
+
+**Why optional and not always on?**
+Sometimes cross-genre discovery is the point — "Blinding Lights" (pop)
+legitimately shares audio DNA with certain electronic or dance tracks.
+Forcing same-genre always would kill those interesting cross-genre finds.
+Giving the user a toggle lets them choose based on what they want.
+
+**Limitation that remains:**
+The dataset's genre labels are

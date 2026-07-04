@@ -8,25 +8,28 @@ including *what* each part does and *why* it's done that way.
 ## The Big Picture
 
 ```
+```
 Raw CSV (114,000 rows)
         │
         ▼
-   load_data()         ← read CSV into a DataFrame
+   load_data()             ← read CSV into a DataFrame
         │
         ▼
-   clean_data()        ← drop nulls, drop duplicate song names, reset index
+   clean_data()            ← drop nulls, drop duplicate song names, reset index
         │
         ▼
-get_feature_matrix()   ← extract 9 numeric audio feature columns as numpy array
+get_feature_matrix()       ← extract 9 numeric audio feature columns as numpy array
         │
         ▼
-  StandardScaler()     ← normalize features so no single feature dominates
+  StandardScaler()         ← normalize features so no single feature dominates
         │
         ▼
-cosine_similarity()    ← compute similarity score between every pair of songs
+  recommend(song, n)       ← compute on-demand cosine similarity for queried song
         │
-        ▼
-  recommend(song, n)   ← look up a song, sort its scores, return top-N results
+        ├── same_genre=False → return top-N across all 73,608 songs
+        │
+        └── same_genre=True  → filter to same genre first, then return top-N
+```
 ```
 
 ---
