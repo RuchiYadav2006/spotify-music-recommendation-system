@@ -6,8 +6,6 @@ including *what* each part does and *why* it's done that way.
 ---
 
 ## The Big Picture
-
-```
 ```
 Raw CSV (114,000 rows)
         │
@@ -29,7 +27,7 @@ get_feature_matrix()       ← extract 9 numeric audio feature columns as numpy 
         ├── same_genre=False → return top-N across all 73,608 songs
         │
         └── same_genre=True  → filter to same genre first, then return top-N
-```
+
 ```
 
 ---
