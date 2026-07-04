@@ -7,8 +7,6 @@ into a format ready for similarity computation.
 
 import pandas as pd
 
-# These are the audio features we'll use to compare songs.
-# Adjust this list based on what columns your actual dataset has.
 FEATURE_COLUMNS = [
     "danceability",
     "energy",
@@ -23,37 +21,18 @@ FEATURE_COLUMNS = [
 
 
 def load_data(csv_path: str) -> pd.DataFrame:
-    """
-    Load the dataset from a CSV file.
-
-    TODO:
-    - Read the CSV using pandas (pd.read_csv)
-    - Print the shape and column names so you can sanity-check the data
-    - Return the raw DataFrame
-    """
-    raise NotImplementedError
+    df = pd.read_csv(csv_path)
+    print(f"Loaded dataset: {df.shape[0]} rows, {df.shape[1]} columns")
+    return df
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean the dataset so it's ready for feature extraction.
-
-    TODO:
-    - Drop rows with missing values in FEATURE_COLUMNS or 'track_name'
-      (hint: df.dropna(subset=...))
-    - Drop duplicate songs (hint: df.drop_duplicates(subset='track_name'))
-    - Reset the index after dropping rows (df.reset_index(drop=True))
-    - Return the cleaned DataFrame
-    """
-    raise NotImplementedError
+    df = df.dropna(subset=FEATURE_COLUMNS + ["track_name"])
+    df = df.drop_duplicates(subset="track_name")
+    df = df.reset_index(drop=True)
+    print(f"After cleaning: {df.shape[0]} unique songs")
+    return df
 
 
 def get_feature_matrix(df: pd.DataFrame):
-    """
-    Extract just the numeric feature columns used for similarity computation.
-
-    TODO:
-    - Select FEATURE_COLUMNS from df
-    - Return as a numpy array (df[FEATURE_COLUMNS].values)
-    """
-    raise NotImplementedError
+    return df[FEATURE_COLUMNS].values
