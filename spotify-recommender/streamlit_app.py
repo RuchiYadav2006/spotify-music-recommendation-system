@@ -8,21 +8,21 @@ Run with: streamlit run streamlit_app.py
 import streamlit as st
 from src.recommender import Recommender
 
-# ── Page config ───────────────────────────────────────────────
+# ─>-- Page config --<--
 st.set_page_config(
     page_title="Spotify Song Recommender",
     page_icon="🎵",
     layout="centered"
 )
 
-# ── Load recommender once (cached so it doesn't reload on every interaction) ──
+# ─>-- Load recommender once (cached so it doesn't reload on every interaction) ─<--
 @st.cache_resource
 def load_recommender():
     rec = Recommender("data/spotify_data.csv")
     rec.build()
     return rec
 
-# ── Header ────────────────────────────────────────────────────
+# ─>-- Header ─<--
 st.title("🎵 Spotify Song Recommender")
 st.markdown(
     "Enter a song name and get similar tracks based on audio features "
@@ -30,13 +30,13 @@ st.markdown(
 )
 st.divider()
 
-# ── Load model ────────────────────────────────────────────────
+# ─>-- Load model ─<--
 with st.spinner("Loading recommender (first load takes a few seconds)..."):
     rec = load_recommender()
 
 st.success("Recommender ready!", icon="✅")
 
-# ── Input ─────────────────────────────────────────────────────
+# ─>-- Input ─<--
 st.subheader("Search")
 song_name = st.text_input(
     label="Song name",
@@ -50,7 +50,7 @@ same_genre = st.toggle(
     help="Restrict recommendations to songs from the same genre as the input song."
 )
 
-# ── Recommend ─────────────────────────────────────────────────
+# ─>-- Recommend ──<--
 if st.button("Recommend 🎧", use_container_width=True):
     if not song_name.strip():
         st.warning("Please enter a song name.")
@@ -78,14 +78,14 @@ if st.button("Recommend 🎧", use_container_width=True):
                     col3.markdown(f"`{r['score']}`")
                 st.divider()
 
-# ── Footer ────────────────────────────────────────────────────
+# ─>-- Footer ──<--
+
 st.markdown(
     """
     ---
-    **How it works:** Audio features are normalized with `StandardScaler`,
+    **How it works:** audio features are normalized with `StandardScaler`,
     then cosine similarity is computed on-demand between the queried song
-    and all 73,608 tracks in the dataset.
-
-    📖 [View source on GitHub](https://github.com/yourusername/spotify-recommender)
+    and all 73,608 tracks in the dataset. See `docs/how_it_works.md` for
+    the full pipeline.
     """
 )

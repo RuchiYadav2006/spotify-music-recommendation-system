@@ -52,25 +52,22 @@ spotify-recommender/
 ## Setup
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/yourusername/spotify-recommender.git
-cd spotify-recommender
-
-# 2. Create and activate a virtual environment
+# create + activate a venv
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 
-# 3. Install dependencies
+# install deps
 pip install -r requirements.txt
 
-# 4. Download the dataset into data/spotify_data.csv
-#    https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset
+# grab the dataset from Kaggle and drop it in data/spotify_data.csv
+# https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset
 
-# 5. Run it
+# run it
 python -m src.app
+# or, for the web UI:
+streamlit run streamlit_app.py
 ```
 
----
 
 ## Dataset
 
@@ -125,17 +122,11 @@ for r in results:
 
 ---
 
-## Future improvements
+## Things I'd add if I kept going
 
-- Approximate nearest neighbor search (Faiss/Annoy) to scale beyond 73k songs
-- Add genre filtering on top of audio-feature similarity
-- Deploy as a web app (Streamlit Cloud / Hugging Face Spaces)
-- Hybrid model: combine content-based with collaborative filtering
+- Approximate nearest neighbor search (Faiss/Annoy) so it scales past 73k songs
+  without recomputing similarity from scratch each time
+- Deploy the Streamlit app somewhere (Streamlit Cloud / HF Spaces)
+- Maybe a hybrid model down the line if I can find a dataset with listening
+  history attached
 
----
-
-## Resume bullet
-
-> Built a content-based music recommendation engine in Python using cosine similarity
-> on normalized Spotify audio features (73,608 tracks), returning top-N similar songs
-> with modular, production-style code structure (src/, tests/, docs/).

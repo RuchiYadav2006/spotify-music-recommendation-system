@@ -1,23 +1,16 @@
 # Design Decisions
 
-Every project involves tradeoffs. This document explains the key choices made
-and why — the kind of things you'd discuss in a technical interview.
+Notes on the choices I made and why, mostly so I remember my own reasoning
+later.
 
----
 
 ## Why content-based filtering, not collaborative filtering?
 
-| Approach | How it works | Needs |
-|---|---|---|
-| **Content-based** (what we built) | Compare audio features of songs | Just the song data |
-| **Collaborative filtering** | "Users who liked X also liked Y" | User listening history |
-
-We chose content-based because:
-- The Kaggle dataset has no user listening history — only song features
-- Content-based is explainable: "these songs are similar because their energy, tempo, and danceability are close"
-- No cold-start problem: works for any song in the dataset, even unpopular ones
-
----
+The Kaggle dataset only has song-level audio features - no user IDs, no
+play counts, nothing about who listened to what. So collaborative filtering
+("people who liked X also liked Y") was never really on the table here.
+Content-based also has a nice side effect: no cold-start problem, since it
+works the same whether the song is a hit or has 12 plays.
 
 ## Why cosine similarity, not Euclidean distance?
 
@@ -61,7 +54,7 @@ contribute equally to the final similarity score.
 The dataset contains the same song listed multiple times under different genres.
 "Blinding Lights" appears under pop, dance, and electronic as separate rows.
 
-If we keep duplicates:
+If I keep duplicates:
 - The similarity matrix grows unnecessarily (slower, more memory)
 - Recommendations could return the same song multiple times under different entries
 - `recommend()` would return the first match — but which duplicate? Unpredictable.
@@ -70,28 +63,6 @@ Dropping to one entry per track name keeps results clean and deterministic.
 
 ---
 
-## Why precompute the full similarity matrix in `build()`?
-
-Alternative: compute similarity on-the-fly at query time (only for the queried song).
-
-| Approach | Query speed | Memory | Build time |
-|---|---|---|---|
-| Precompute full matrix | Instant (just an array lookup) | ~43 GB for 73k songs... wait |
-| Compute at query time | ~0.5s per query | Very low | None |
-
-**Wait — 43 GB?** A 73,608 × 73,608 float64 matrix would be ~43 GB.
-That's clearly not what we're building here. In practice, scikit-learn's
-`cosine_similarity` for 73k songs takes ~10–30 seconds and uses ~1–2 GB RAM
-depending on your machine — manageable for a local project and demo.
-
-For a production system you would:
-- Use approximate nearest neighbor search (Faiss, Annoy)
-- Precompute and store to disk
-- Only compute similarity for the queried song at runtime
-
-For a portfolio mini-project, full precomputation is fine and simpler to explain.
-
----
 
 ## Why CLI first, Streamlit second?
 
@@ -105,60 +76,46 @@ harder to test and harder to change later.
 
 
 
-## Why on-demand similarity instead of precomputing the full matrix?
+## Computing similarity per-query instead of one big matrix
 
-First attempt used `cosine_similarity(all_73k_songs)` which tries to allocate
-a 73,608 × 73,608 float64 matrix — that's **40.4 GB of RAM**. Crashed
-immediately on a normal laptop with `numpy.core.exceptions.ArrayMemoryError`.
-
-Fix: compute similarity only for the queried song at query time:
-
-| Approach | Memory | Query speed |
-|---|---|---|
-| Precompute full matrix | 40.4 GB ❌ | Instant |
-| On-demand (what we use) | ~0.6 MB ✅ | ~0.5s per query |
+My first version tried to precompute the whole similarity matrix up front,
+figuring I'd just look up a row whenever someone searched a song:
 
 ```python
-# Instead of this (40 GB):
 self.similarity_matrix = cosine_similarity(scaled_features)
+```
 
-# We do this (0.6 MB):
+That's a 73,608 x 73,608 matrix of floats, which works out to roughly 40GB
+of RAM. It died instantly on my laptop with an `ArrayMemoryError`. Once I
+did the math I realized precomputing everything up front never made sense
+at this scale - so instead I only compute similarity between the queried
+song and everyone else, at query time:
+
+```python
 song_vector = self.scaled_features[idx].reshape(1, -1)
 scores = cosine_similarity(song_vector, self.scaled_features)[0]
 ```
 
-For a production system with millions of songs you'd use approximate nearest
-neighbor search (Faiss, Annoy) instead — but on-demand cosine is perfectly
-fast for a 73k-song portfolio project.
-
+That's a fraction of a second per search and a few hundred KB of memory
+instead of 40GB. For something with millions of songs you'd want an
+approximate nearest-neighbor index (Faiss, Annoy) instead of brute-force
+cosine similarity even at query time - but for 73k songs, brute force is
+fine.
 
 ## Why add a same-genre filter on top of cosine similarity?
 
-Pure audio-feature similarity is language and culture blind. The model only
-sees 9 numbers per song — it has no concept of Hindi, Portuguese, or English.
+Pure audio-feature similarity has no idea what language or culture a song
+belongs to - it only sees 9 numbers. I ran into this searching for "Tu Hi
+Haqeeqat" (a Bollywood ballad) and getting back Brazilian acoustic tracks,
+which isn't wrong exactly - they really do have almost identical tempo,
+energy, and acousticness - but it's not a useful recommendation if you
+wanted something in the same genre/language.
 
-**The problem we hit:**
-Searching "Tu Hi Haqeeqat" (Bollywood ballad) returned Brazilian/Portuguese
-songs — not because the algorithm was wrong, but because those songs had
-nearly identical audio profiles (soft, acoustic, low energy, low tempo).
-
-**The fix:**
-Added an optional `same_genre` flag to `recommend()`:
-
-```python
-def recommend(self, song_name: str, n: int = 5, same_genre: bool = False)
-```
-
-When `same_genre=True`:
-- Find the input song's `track_genre` from the dataset
-- During result collection, skip any song whose genre doesn't match
-- Show which genre is being filtered in the UI
-
-**Why optional and not always on?**
-Sometimes cross-genre discovery is the point — "Blinding Lights" (pop)
-legitimately shares audio DNA with certain electronic or dance tracks.
-Forcing same-genre always would kill those interesting cross-genre finds.
-Giving the user a toggle lets them choose based on what they want.
-
-**Limitation that remains:**
-The dataset's genre labels are
+So `recommend()` takes an optional `same_genre` flag that restricts results
+to the same `track_genre` as the input song. It's off by default because
+sometimes the cross-genre matches are the interesting part (that's how
+"Blinding Lights" ends up next to some electronic/dance tracks it has no
+obvious business being near). The genre labels in this dataset aren't
+perfectly clean either - the same song can appear under a slightly
+different genre tag depending on how it was scraped - so the filter helps
+but isn't airtight.

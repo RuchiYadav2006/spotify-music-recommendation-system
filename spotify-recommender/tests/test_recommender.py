@@ -11,7 +11,7 @@ from src.recommender import Recommender
 DATA_PATH = "data/spotify_data.csv"
 
 
-# ── Fixture: build recommender once, reuse across all tests ───
+# ─>-- Fixture: build recommender once, reuse across all tests ─<--
 @pytest.fixture(scope="module")
 def recommender():
     rec = Recommender(DATA_PATH)
@@ -19,7 +19,7 @@ def recommender():
     return rec
 
 
-# ── Test 1 ────────────────────────────────────────────────────
+# ─>-- Test 1 ─<--
 def test_build_loads_data(recommender):
     """
     After build(), df and scaled_features must exist
@@ -30,7 +30,7 @@ def test_build_loads_data(recommender):
     assert len(recommender.df) == recommender.scaled_features.shape[0]
 
 
-# ── Test 2 ────────────────────────────────────────────────────
+# ─>-- Test 2 ──<--
 def test_recommend_returns_correct_count(recommender):
     """
     recommend() should return exactly n results
@@ -40,7 +40,7 @@ def test_recommend_returns_correct_count(recommender):
     assert len(results) == 5
 
 
-# ── Test 3 ────────────────────────────────────────────────────
+# ─>-- Test 3 ─<--
 def test_recommend_excludes_input_song(recommender):
     """
     The input song itself should never appear in its own recommendations.
@@ -51,7 +51,7 @@ def test_recommend_excludes_input_song(recommender):
     assert song.lower() not in track_names
 
 
-# ── Test 4 ────────────────────────────────────────────────────
+# ─>-- Test 4 ─<--
 def test_recommend_unknown_song_returns_empty(recommender):
     """
     A song that doesn't exist in the dataset should
@@ -61,7 +61,7 @@ def test_recommend_unknown_song_returns_empty(recommender):
     assert results == []
 
 
-# ── Test 5 ────────────────────────────────────────────────────
+# ─>-- Test 5 ─<--
 def test_recommend_same_genre_filter(recommender):
     """
     When same_genre=True, all returned songs must share
@@ -85,7 +85,7 @@ def test_recommend_same_genre_filter(recommender):
         )
 
 
-# ── Test 6 ────────────────────────────────────────────────────
+# ─>-- Test 6 ─<--
 def test_scores_are_between_0_and_1(recommender):
     """
     Cosine similarity scores must always be between -1 and 1.
